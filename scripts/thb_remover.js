@@ -4,7 +4,7 @@
 // @version      0.1
 // @description  remove all nicht bestandene Exams
 // @author       Mischa
-// @match        https://hisqis.fh-brandenburg.de/*
+// @match        https://hisqis.fh-brandenburg.de/*menuid=notenspiegel*
 // @grant        none
 // ==/UserScript==
 
