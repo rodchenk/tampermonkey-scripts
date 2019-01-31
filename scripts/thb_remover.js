@@ -22,7 +22,9 @@
     });
     li.appendChild(a);
     ul.appendChild(li);
-
+    document.getElementsByClassName('header_hisinone')[0].remove();
+    document.getElementsByClassName('divfoot')[0].remove();
+    document.getElementsByClassName('divloginstatus')[0].setAttribute('style', 'background-color:#1f1f1f;padding:16px');
     Array.prototype.slice.call(document.getElementsByClassName('tabelle1')).filter(function(e){return e.innerHTML.trim().includes('Wintersemester 18/19')})
         .forEach(function(e){Array.from(e.parentNode.children).forEach(function(i){ i.setAttribute('style', 'background-color: #3F51B5; color: white;border-color: #3F51B5')})});
 })();
