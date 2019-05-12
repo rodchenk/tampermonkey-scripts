@@ -41,6 +41,13 @@ $ virsh domblklist <vm-name> --details
 $ virsh domblkinfo <vm-name> /mnt/DIR_NAME/FILE_NAME.qcow2
 ```
 
+Список снепшотов заданной виртуальной машины и инфомарция о текущем её снепшоте.
+```
+$ virsh snapshotlist <vm-name>
+$ virsh snapshotinfo --domain <vm-name> --current
+```
+
+
 
 ****
 
