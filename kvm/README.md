@@ -10,18 +10,27 @@
 
 Für alle laufenden VMs wird ausgeführt:
 ```
-virsh snapshot-create-as .. -> erstellen eines Snapshots aller Volumes der VM
+$ virsh snapshot-create-as .. # erstellen eines Snapshots aller Volumes der VM
 ```
 ```
-rsync --sparse ... -> kopieren der originalen Volumes ins Backupverzeichnis
+$ rsync --sparse ... # kopieren der originalen Volumes ins Backupverzeichnis
 ```
 ```
-virsh blockcommit ... -> einarbeiten der Änderungen ins originale Volume
+$ virsh blockcommit ... # einarbeiten der Änderungen ins originale Volume
 ```
 ```
-fuser -s ${img} || rm ${img} -> löschen der Overlay-Images
+$ fuser -s ${img} || rm ${img} # löschen der Overlay-Images
 ```
 
+> Nach dem Abarbeiten aller Volumes wird das XML-Definitionsfile der jeweiligen VM ebenfalls ins Backup-Verzeichnis kopiert.
+
+> Für die Option "--quiesce" in **virsh snapshot-create-as** ist es notwenig, dass auf dem Gast der sogenannte "qemu-guest-agent" installiert ist. Dieser kann Befehle vom Host-System entgegen nehmen und wie in diesem Fall, das Dateisystem in einen konsistenten Zustand versetzen.
+
+> Für jede VM werden die Volumes aufgelistet, ein Snapshot aller Volumes angelegt und anschließend jedes Volume gesichert. Danach werden die Snapshots wieder in die Original-Volumes eingearbeitet 
+
+#### Weitere Link [Live hot KVM Backup](https://serveradmin.ru/kvm-backup/), [Rsync](https://serveradmin.ru/rsync-nastroyka-bekapa-na-centos-debian-ubuntu/)
+
+****
 
 Посмотреть подключённые диски с выводом информации о размере и свободном пространстве можно с помощью утилиты 
 ```
