@@ -28,7 +28,19 @@ $ fuser -s ${img} || rm ${img} # löschen der Overlay-Images
 
 > Für jede VM werden die Volumes aufgelistet, ein Snapshot aller Volumes angelegt und anschließend jedes Volume gesichert. Danach werden die Snapshots wieder in die Original-Volumes eingearbeitet 
 
-#### Weitere Link [Live hot KVM Backup](https://serveradmin.ru/kvm-backup/), [Rsync](https://serveradmin.ru/rsync-nastroyka-bekapa-na-centos-debian-ubuntu/)
+#### Weitere Links [Live hot KVM Backup](https://serveradmin.ru/kvm-backup/), [Rsync](https://serveradmin.ru/rsync-nastroyka-bekapa-na-centos-debian-ubuntu/)
+
+Список дисков виртуальной машины.
+
+```
+$ virsh domblklist <vm-name> --details
+```
+
+Информация о конрктеном диске заданной виртуальной машины
+```
+$ virsh domblkinfo <vm-name> /mnt/DIR_NAME/FILE_NAME.qcow2
+```
+
 
 ****
 
