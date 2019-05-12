@@ -8,6 +8,21 @@
 
 > **snapshot-create-as** erzeugt in einem Schritt ein Snapshot aller Volumes der VM. 
 
+Für alle laufenden VMs wird ausgeführt:
+```
+virsh snapshot-create-as .. -> erstellen eines Snapshots aller Volumes der VM
+```
+```
+rsync --sparse ... -> kopieren der originalen Volumes ins Backupverzeichnis
+```
+```
+virsh blockcommit ... -> einarbeiten der Änderungen ins originale Volume
+```
+```
+fuser -s ${img} || rm ${img} -> löschen der Overlay-Images
+```
+
+
 Посмотреть подключённые диски с выводом информации о размере и свободном пространстве можно с помощью утилиты 
 ```
 $ df -h
