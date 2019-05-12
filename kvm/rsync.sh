@@ -1,25 +1,5 @@
 #!/bin/bash
- 
-# Online backup for KVM guests
- 
-# Copyright 2016, 2017,
-#     Jens Tautenhahn <shogun@tausys.de>
-#     Christian Roessner <c@roessner.co>
-#
-# Contributors: Jan Wenzel, Oliver Guenther, Stephan Eisvogel
- 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
- 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License at <http://www.gnu.org/licenses/> for
-# more details.
-#
- 
+
 CONFIG=/etc/backup-vms.conf
  
 # ============================================================================
@@ -41,7 +21,6 @@ function exit_on_check() {
 [[ -f $CONFIG ]] || exit_on_check "Config file $CONFIG not found."
 source $CONFIG
  
-command -v virsh >/dev/null 2>&1 || exit_on_check "Libvirt not found.  Aborting."
 command -v rsync >/dev/null 2>&1 || exit_on_check "Rsync not found.  Aborting."
 command -v $ZIP_BIN >/dev/null 2>&1 || exit_on_check "7Zip not found.  Aborting."
 command -v fuser >/dev/null 2>&1 || exit_on_check "fuser not found.  Aborting."
@@ -157,28 +136,80 @@ function run_online() {
         unset imgs
         unset imgsnew
  
-        logline "Create Snapshot of KVM online guest '${vm}'"
+        logline "Backup KVM online guest '${vm}'"
  
         # Get list of disk names and image paths
         declare -A imgs
         eval $(virsh domblklist ${vm} --details \
                 | awk '/^[[:space:]]*file[[:space:]]+disk/ {print "imgs["$3"]="$4}')
  
-        # Test if there exists already a file with extension .backup
+ 		#
+        # snapshot code was here
+        # imgs und imgsbackup machen keinen unterschied jetzt
+        # (?) snapshots muessen spaeter geloescht werden
+        #
+
+        # Remember backup file names for future removal
+        declare -A imgsbackup
+        eval $(virsh domblklist ${vm} --details \
+            | awk '/^[[:space:]]*file[[:space:]]+disk/ {print "imgsbackup["$3"]="$4}')
+ 
+        # Backup original disk image of the VM
         for img in ${imgs[@]}; do
-            # Skip suffix as it will already be created with basename + backup
-            img=${img%@(.img|.qcow2)}
-            if [[ -f ${img}.backup ]]; then
-                logline "${img}.backup from VM ${vm} already exists"
+            mkdir -p ${DST}/${vm}/
+            touch ${DST}/${vm}
+            if [[ -f ${DST}/${vm}/$(basename ${img}) ]]; then
+                if [ -n ${HISTORY} ]; then
+                    if [[ -f ${DST}/${vm}/$(basename ${img}).1 ]]; then
+                        rm ${DST}/${vm}/$(basename ${img}).1
+                        exit_on_error remove old backup
+                    fi
+                    mv ${DST}/${vm}/$(basename ${img}) ${DST}/${vm}/$(basename ${img}).1
+                    exit_on_error move old backup
+                else
+                   rm ${DST}/${vm}/$(basename ${img})
+                fi
+            fi
+            rsync --progress --sparse ${img} ${DST}/${vm}/ 2>&1 | $LOGPARM
+            exit_on_error rsync
+        done
+ 
+        # Merge snapshot file with original disk image
+        for disc in ${!imgs[@]}; do
+            virsh blockcommit ${vm} ${disc} --active --wait --pivot 2>&1 | $LOGPARM
+            exit_on_error virsh blockcommit
+        done
+ 
+        # Test if all original disks are back in place
+        declare -A imgsnew
+        eval $(virsh domblklist ${vm} --details | \
+            awk '/^[[:space:]]*file[[:space:]]+disk/ {print "imgsnew["$3"]="$4}')
+        for disc in ${!imgsnew[@]}; do
+            if [[ ${imgs[$disc]} != ${imgsnew[$disc]} ]]; then
+                logline "Error while writing snapshot for VM ${vm} ${disc}"
                 continue 2
             fi
         done
  
-        # Create snapshots for all disks
-        virsh snapshot-create-as ${vm} backup \
-            --disk-only --atomic --no-metadata --quiesce 2>&1 | $LOGPARM
-        exit_on_error virsh snapshot-create
-
+        # Sanity check/cleanup that no original filename is in the backup array
+        for match in "${imgs[@]}"; do
+            for i in "${!imgsbackup[@]}"; do
+                if [[ ${imgsbackup[$i]} = "${match}" ]]; then
+                    unset "imgsbackup[$i]"
+                fi
+            done
+        done
+ 
+        # Remove orphaned backup snapshot files
+        for img in ${imgsbackup[@]}; do
+            fuser -s ${img} || rm ${img}
+            exit_on_error remove orphaned backup snapshots
+        done
+        unset imgsbackup
+ 
+        # Save XML VM definition file
+        virsh dumpxml ${vm} > ${DST}/${vm}/domain.xml
+        logline "Backup KVM of '${vm}' complete"
     done
 }
  
