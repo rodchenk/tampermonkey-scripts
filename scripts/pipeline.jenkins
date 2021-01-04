@@ -1,0 +1,22 @@
+#! groovy
+
+properties([
+    disableConcurrentBuilds()
+])
+
+pipeline {
+    agent {
+        label 'remote'
+    }
+    options {
+        buildDiscarded(logRotator(numToKeepStr: '10', artifactToKeepStr: '10'))
+        timestamps()
+    }
+    stages {
+        stage('Preparations') {
+            steps {
+                bat 'echo Hello world'
+            }
+        }
+    }
+}
