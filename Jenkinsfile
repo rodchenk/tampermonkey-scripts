@@ -2,8 +2,19 @@ pipeline {
   agent any
   stages {
     stage('Test') {
-      steps {
-        echo 'Start test'
+      parallel {
+        stage('Test') {
+          steps {
+            echo 'Start test'
+          }
+        }
+
+        stage('Alt test') {
+          steps {
+            echo 'Alternative test'
+          }
+        }
+
       }
     }
 
